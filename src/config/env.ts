@@ -9,5 +9,6 @@ export const ENV = {
   DATABASE_URL: process.env.DATABASE_URL || "",
   JWT_SECRET: process.env.JWT_SECRET || "",
 
-  RESEND_API_KEY: process.env.RESEND_API_KEY || ""
+  RESEND_API_KEY: process.env.RESEND_API_KEY || "",
+  FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:5173",
 };
