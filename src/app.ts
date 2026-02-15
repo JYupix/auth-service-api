@@ -1,5 +1,6 @@
 import express, { ErrorRequestHandler, NextFunction } from "express";
 import helmet from "helmet";
+import cookiesParser from "cookie-parser";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import authRoutes from "./modules/auth/auth.routes.js";
@@ -9,6 +10,7 @@ const app = express();
 // Middlewares
 app.use(helmet());
 app.use(express.json());
+app.use(cookiesParser());
 
 // Health check endpoint
 app.get("/api/health", (_, res) => {

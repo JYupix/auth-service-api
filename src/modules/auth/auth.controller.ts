@@ -260,3 +260,39 @@ export const resetPassword = async (
     message: "Password reset successful. Please log in with your new password.",
   });
 };
+
+export const getCurrentUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  const userId = req.user?.userId;
+
+  if (!userId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      email: true,
+      profileImage: true,
+      bio: true,
+      role: true,
+      emailVerified: true,
+      lastLogin: true,
+      createdAt: true,
+    },
+  });
+
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+  res.status(200).json({ user });
+};
