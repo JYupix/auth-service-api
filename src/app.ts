@@ -5,6 +5,7 @@ import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import authRoutes from "./modules/auth/auth.routes.js";
 import postsRoutes from "./modules/posts/posts.routes.js";
+import commentsRoutes from "./modules/comments/comments.routes.js";
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.get("/api/health", (_, res) => {
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/posts", postsRoutes);
+app.use("/api/comments", commentsRoutes);
 
 // Global error handler
 const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {

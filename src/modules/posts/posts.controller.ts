@@ -29,7 +29,7 @@ export const getPosts = async (
     orderBy: { publishedAt: "desc" },
   });
 
-  res.json(posts);
+  res.status(200).json({ posts });
 };
 
 export const getMyPosts = async (
@@ -57,7 +57,7 @@ export const getMyPosts = async (
     orderBy: { createdAt: "desc" },
   })
 
-  res.status(200).json(myPosts);
+  res.status(200).json({ posts: myPosts });
 }
 
 export const getPostBySlug = async (
@@ -93,7 +93,7 @@ export const getPostBySlug = async (
     return;
   }
 
-  res.json(post);
+  res.status(200).json({ post });
 };
 
 export const createPost = async (
@@ -131,7 +131,7 @@ export const createPost = async (
     },
   });
 
-  res.status(201).json(newPost);
+  res.status(201).json({ post: newPost });
 };
 
 export const updatePost = async (
@@ -188,7 +188,7 @@ export const updatePost = async (
     },
   });
 
-  res.status(200).json(updatedPost);
+  res.status(200).json({ post: updatedPost });
 };
 
 export const deletePost = async (
