@@ -127,8 +127,8 @@ GET    /api/auth/me                  # Get current user (Protected)
 ### 👤 Users
 ```http
 GET    /api/users/:username          # Get user profile & posts
-GET    /api/users/profile            # Get my profile (Protected)
-PUT    /api/users/profile            # Update profile (Protected)
+GET    /api/users/me                 # Get my profile (Protected)
+PATCH  /api/users/me                 # Update profile (Protected)
 POST   /api/users/:username/follow   # Follow/Unfollow user (Protected)
 GET    /api/users/:username/followers # Get user followers
 GET    /api/users/:username/following # Get user following
@@ -138,18 +138,18 @@ GET    /api/users/:username/following # Get user following
 ```http
 GET    /api/posts                    # Get all posts (paginated)
 POST   /api/posts                    # Create post (Protected)
-GET    /api/posts/my-posts           # Get my posts (Protected)
+GET    /api/posts/me                 # Get my posts (Protected)
 GET    /api/posts/:slug              # Get post by slug
-PUT    /api/posts/:slug              # Update post (Protected)
-DELETE /api/posts/:slug              # Delete post (Protected)
+PATCH  /api/posts/:id                # Update post (Protected)
+DELETE /api/posts/:id                # Delete post (Protected)
 ```
 
 ### 💬 Comments
 ```http
 GET    /api/posts/:id/comments       # Get post comments (paginated)
 POST   /api/posts/:id/comments       # Add comment (Protected)
-GET    /api/comments/my-comments     # Get my comments (Protected)
-PUT    /api/comments/:id             # Update comment (Protected)
+GET    /api/comments/me              # Get my comments (Protected)
+PATCH  /api/comments/:id             # Update comment (Protected)
 DELETE /api/comments/:id             # Delete comment (Protected)
 ```
 
