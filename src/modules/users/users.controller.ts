@@ -478,3 +478,74 @@ export const getFollowing = async (
     },
   });
 };
+
+export const updateUserByAdmin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  const username = req.params.username as string;
+  const { name, bio, profileImage } = updateUserSchema.parse(req.body);
+
+  const user = await prisma.user.findUnique({
+    where: { username, deletedAt: null },
+  });
+
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+  const data: Prisma.UserUpdateInput = {};
+
+  if (name !== undefined) data.name = name;
+  if (bio !== undefined) data.bio = bio;
+  if (profileImage !== undefined) data.profileImage = profileImage;
+
+  const updatedUser = await prisma.user.update({
+    where: { id: user.id },
+    data,
+    select: {
+      id: true,
+      username: true,
+      name: true,
+      email: true,
+      bio: true,
+      profileImage: true,
+      role: true,
+      createdAt: true,
+    },
+  });
+
+  res.status(200).json({ user: updatedUser });
+};
+
+export const deleteUserByAdmin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  const username = req.params.username as string;
+  const userId = req.user?.userId as string;
+
+  const user = await prisma.user.findUnique({
+    where: { username, deletedAt: null },
+  });
+
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+  if (user.id === userId) {
+    res.status(400).json({ message: "You cannot delete your own account" });
+    return;
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { deletedAt: new Date() },
+  });
+
+  res.status(200).json({ message: "User deleted successfully" });
+};

@@ -61,6 +61,11 @@ model Post {
   published Boolean  @default(false)
   publishedAt DateTime?
 
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  tags PostTag[]
+
   comments Comment[]
   likes     Like[] 
   
@@ -114,4 +119,42 @@ model Follow {
   @@unique([followerId, followingId])
   @@index([followerId])
   @@index([followingId])
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+
+  posts Post[]
+
+  createdAt DateTime @default(now())
+
+  @@index([slug])
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+
+  posts PostTag[]
+
+  createdAt DateTime @default(now())
+
+  @@index([slug])
+}
+
+model PostTag {
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  tagId  String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  createadAt DateTime @default(now())
+  
+  @@id([postId, tagId])
+  @@index([postId])
+  @@index([tagId])
 }

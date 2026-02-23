@@ -151,7 +151,8 @@ export const createPost = async (
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
-  const { title, content, published } = createPostSchema.parse(req.body);
+  const { title, content, published, categoryId, tags } =
+    createPostSchema.parse(req.body);
   const authorId = req.user?.userId;
 
   if (!authorId) {
@@ -159,6 +160,39 @@ export const createPost = async (
     return;
   }
   const slug = generateSlug(title);
+
+  if (categoryId) {
+    const categoryExists = await prisma.category.findUnique({
+      where: { id: categoryId },
+    });
+
+    if (!categoryExists) {
+      res.status(404).json({ message: "Category not found" });
+      return;
+    }
+  }
+
+  let tagIds: string[] = [];
+
+  if (tags && tags.length > 0) {
+    const tagPromises = tags.map(async (tagName) => {
+      const tagSlug = generateSlug(tagName);
+
+      // Buscar o crear tag
+      const tag = await prisma.tag.upsert({
+        where: { slug: tagSlug },
+        update: {},
+        create: {
+          name: tagName,
+          slug: tagSlug,
+        },
+      });
+
+      return tag.id;
+    });
+
+    tagIds = await Promise.all(tagPromises);
+  }
 
   const newPost = await prisma.post.create({
     data: {
@@ -168,6 +202,12 @@ export const createPost = async (
       authorId,
       published: published ?? false,
       publishedAt: published ? new Date() : null,
+      categoryId: categoryId || null,
+      tags: {
+        create: tagIds.map((tagId) => ({
+          tagId,
+        })),
+      },
     },
     include: {
       author: {
@@ -176,6 +216,24 @@ export const createPost = async (
           username: true,
           name: true,
           profileImage: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+      tags: {
+        include: {
+          tag: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
         },
       },
     },
@@ -190,11 +248,18 @@ export const updatePost = async (
   next: NextFunction,
 ): Promise<void> => {
   const id = req.params.id as string;
-  const { title, content, published } = updatePostSchema.parse(req.body);
+  const { title, content, published, categoryId, tags } =
+    updatePostSchema.parse(req.body);
   const authorId = req.user?.userId;
+  const userRole = req.user?.role;
+
+  if (!authorId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
 
   const post = await prisma.post.findUnique({
-    where: { id },
+    where: { id, deletedAt: null },
   });
 
   if (!post) {
@@ -202,9 +267,23 @@ export const updatePost = async (
     return;
   }
 
-  if (post.authorId !== authorId) {
+  const isAdmin = userRole === "ADMIN";
+  const isAuthor = post.authorId === authorId;
+
+  if (!isAuthor && !isAdmin) {
     res.status(403).json({ message: "Forbidden" });
     return;
+  }
+
+  if (categoryId) {
+    const categoryExists = await prisma.category.findUnique({
+      where: { id: categoryId },
+    });
+
+    if (!categoryExists) {
+      res.status(404).json({ message: "Category not found" });
+      return;
+    }
   }
 
   const data: Prisma.PostUpdateInput = {};
@@ -223,8 +302,45 @@ export const updatePost = async (
     data.publishedAt = published ? post.publishedAt || new Date() : null;
   }
 
+  if (categoryId !== undefined) {
+    if (categoryId === null) {
+      data.category = { disconnect: true };
+    } else {
+      data.category = { connect: { id: categoryId } };
+    }
+  }
+
+  if (tags) {
+    await prisma.postTag.deleteMany({
+      where: { postId: id },
+    });
+
+    const tagPromises = tags.map(async (tagName) => {
+      const tagSlug = generateSlug(tagName);
+
+      const tag = await prisma.tag.upsert({
+        where: { slug: tagSlug },
+        update: {},
+        create: {
+          name: tagName,
+          slug: tagSlug,
+        },
+      });
+
+      return tag.id;
+    });
+
+    const tagIds = await Promise.all(tagPromises);
+
+    data.tags = {
+      create: tagIds.map((tagId) => ({
+        tagId,
+      })),
+    };
+  }
+
   const updatedPost = await prisma.post.update({
-    where: { id, deletedAt: null },
+    where: { id },
     data,
     include: {
       author: {
@@ -233,6 +349,24 @@ export const updatePost = async (
           username: true,
           name: true,
           profileImage: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+      tags: {
+        include: {
+          tag: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
         },
       },
     },
@@ -248,6 +382,12 @@ export const deletePost = async (
 ): Promise<void> => {
   const id = req.params.id as string;
   const authorId = req.user?.userId;
+  const userRole = req.user?.role;
+
+  if (!authorId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
 
   const post = await prisma.post.findUnique({
     where: { id, deletedAt: null },
@@ -258,7 +398,10 @@ export const deletePost = async (
     return;
   }
 
-  if (post.authorId !== authorId) {
+  const isAdmin = userRole === "ADMIN";
+  const isAuthor = post.authorId === authorId;
+
+  if (!isAuthor && !isAdmin) {
     res.status(403).json({ message: "Forbidden" });
     return;
   }
@@ -268,5 +411,5 @@ export const deletePost = async (
     data: { deletedAt: new Date() },
   });
 
-  res.status(204).send();
+  res.status(200).json({ message: "Post deleted successfully" });
 };

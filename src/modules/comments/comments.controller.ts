@@ -167,6 +167,7 @@ export const updateComment = async (
   const id = req.params.id as string;
   const { content } = updateCommentSchema.parse(req.body);
   const authorId = req.user?.userId as string;
+  const userRole = req.user?.role;
 
   if (!authorId) {
     res.status(401).json({ message: "Unauthorized" });
@@ -182,7 +183,10 @@ export const updateComment = async (
     return;
   }
 
-  if (comment.authorId !== authorId) {
+  const isAdmin = userRole === "ADMIN";
+  const isAuthor = comment.authorId === authorId;
+
+  if (!isAuthor && !isAdmin) {
     res.status(403).json({ message: "Forbidden" });
     return;
   }
@@ -216,6 +220,7 @@ export const deleteComment = async (
 ): Promise<void> => {
   const id = req.params.id as string;
   const authorId = req.user?.userId as string;
+  const userRole = req.user?.role;
 
   if (!authorId) {
     res.status(401).json({ message: "Unauthorized" });
@@ -231,7 +236,10 @@ export const deleteComment = async (
     return;
   }
 
-  if (comment.authorId !== authorId) {
+  const isAdmin = userRole === "ADMIN";
+  const isAuthor = comment.authorId === authorId;
+
+  if (!isAuthor && !isAdmin) {
     res.status(403).json({ message: "Forbidden" });
     return;
   }
@@ -241,5 +249,5 @@ export const deleteComment = async (
     data: { deletedAt: new Date() },
   });
 
-  res.status(204).send();
+  res.status(200).json({ message: "Comment deleted successfully" });
 };
