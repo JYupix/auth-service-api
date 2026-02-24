@@ -99,7 +99,7 @@ export const getPostsByCategory = async (
     pagination: {
       page,
       limit,
-      totalPosts,
+      total: totalPosts,
       totalPages: Math.ceil(totalPosts / limit),
       hasMore: skip + limit < totalPosts,
     },

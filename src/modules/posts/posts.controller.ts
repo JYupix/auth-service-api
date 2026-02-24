@@ -413,3 +413,103 @@ export const deletePost = async (
 
   res.status(200).json({ message: "Post deleted successfully" });
 };
+
+export const getFeed = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const userId = req.user?.userId;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+
+  if (!userId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+
+  const following = await prisma.follow.findMany({
+    where: { followerId: userId },
+    select: { followingId: true },
+  });
+
+  const followingIds = following.map((f) => f.followingId);
+
+  if (followingIds.length === 0) {
+    res.status(200).json({
+      posts: [],
+      pagination: {
+        page,
+        limit,
+        totalPosts: 0,
+        totalPages: 0,
+        hasMore: false,
+      },
+    });
+    return;
+  }
+
+  const [posts, totalPosts] = await Promise.all([
+    prisma.post.findMany({
+      where: {
+        authorId: { in: followingIds },
+        published: true,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        publishedAt: true,
+        createdAt: true,
+        author: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            profileImage: true,
+          },
+        },
+        _count: {
+          select: {
+            likes: true,
+            comments: {
+              where: { deletedAt: null },
+            },
+          },
+        },
+      },
+      orderBy: { publishedAt: "desc" },
+      take: limit,
+      skip: skip,
+    }),
+    prisma.post.count({
+      where: {
+        authorId: { in: followingIds },
+        published: true,
+        deletedAt: null,
+      },
+    }),
+  ]);
+
+  res.status(200).json({
+    posts: posts.map((post) => ({
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      publishedAt: post.publishedAt,
+      createdAt: post.createdAt,
+      author: post.author,
+      likesCount: post._count.likes,
+      commentsCount: post._count.comments,
+    })),
+    pagination: {
+      page,
+      limit,
+      total: totalPosts,
+      totalPages: Math.ceil(totalPosts / limit),
+      hasMore: skip + limit < totalPosts,
+    },
+  });
+};

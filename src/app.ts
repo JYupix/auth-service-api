@@ -9,6 +9,7 @@ import commentsRoutes from "./modules/comments/comments.routes.js";
 import usersRoutes from "./modules/users/users.routes.js";
 import tagsRoutes from "./modules/tags/tags.routes.js";
 import categoriesRoutes from "./modules/categories/categories.routes.js";
+import bookmarksRoutes from "./modules/bookmarks/bookmarks.routes.js";
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use("/api/comments", commentsRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/tags", tagsRoutes);
 app.use("/api/categories", categoriesRoutes);
+app.use("/api/bookmarks", bookmarksRoutes);
 
 // Global error handler
 const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {

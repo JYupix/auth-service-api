@@ -40,6 +40,7 @@ model User {
   posts Post[]
   comments Comment[]
   likes     Like[]
+  bookmarks Bookmark[]
 
   followers Follow[] @relation("follower")
   following Follow[] @relation("following")
@@ -67,7 +68,8 @@ model Post {
   tags PostTag[]
 
   comments Comment[]
-  likes     Like[] 
+  likes     Like[]
+  bookmarks Bookmark[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -157,4 +159,19 @@ model PostTag {
   @@id([postId, tagId])
   @@index([postId])
   @@index([tagId])
+}
+
+model Bookmark {
+  id     String @id @default(cuid())
+  userId String
+  postId String
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
 }
