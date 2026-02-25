@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { prisma } from "../../config/db.js";
 import { updateUserSchema } from "./users.schemas.js";
 import { Prisma } from "@prisma/client";
+import cloudinary from "../../config/cloudinary.js";
 
 export const searchUsers = async (
   req: Request,
@@ -106,6 +107,7 @@ export const getUserProfile = async (
         id: true,
         title: true,
         slug: true,
+        coverImage: true,
         publishedAt: true,
         createdAt: true,
         _count: {
@@ -144,6 +146,7 @@ export const getUserProfile = async (
       id: post.id,
       title: post.title,
       slug: post.slug,
+      coverImage: post.coverImage,
       publishedAt: post.publishedAt,
       createdAt: post.createdAt,
       likesCount: post._count.likes,
@@ -224,6 +227,7 @@ export const getMyProfile = async (
         id: true,
         title: true,
         slug: true,
+        coverImage: true,
         published: true,
         publishedAt: true,
         createdAt: true,
@@ -264,6 +268,7 @@ export const getMyProfile = async (
       id: post.id,
       title: post.title,
       slug: post.slug,
+      coverImage: post.coverImage,
       published: post.published,
       publishedAt: post.publishedAt,
       createdAt: post.createdAt,
@@ -548,4 +553,64 @@ export const deleteUserByAdmin = async (
   });
 
   res.status(200).json({ message: "User deleted successfully" });
+};
+
+export const uploadProfilePhoto = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    if (!req.file) {
+      res.status(400).json({ message: "No file uploaded" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId, deletedAt: null },
+      select: { profileImageId: true },
+    });
+
+    if (user?.profileImageId) {
+      await cloudinary.uploader.destroy(user.profileImageId);
+    }
+
+    const b64 = Buffer.from(req.file.buffer).toString("base64");
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: "blog-platform/profiles",
+      resource_type: "auto",
+      transformation: [
+        { width: 500, height: 500, crop: "fill" },
+        { quality: "auto" },
+      ],
+    });
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        profileImage: result.secure_url,
+        profileImageId: result.public_id,
+      },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        profileImage: true,
+        bio: true,
+      },
+    });
+    res.status(200).json({ user: updatedUser });
+  } catch (error) {
+    res.status(500).json({ message: "Error uploading profile photo" });
+  }
 };

@@ -20,6 +20,7 @@ model User {
   password  String
 
   profileImage String?
+  profileImageId String?
   bio          String?
 
   role          Role     @default(USER)
@@ -55,6 +56,8 @@ model Post {
   title     String
   content   String   @db.Text
   slug      String   @unique
+  coverImage String?
+  coverImageId  String?
 
   authorId  String
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)

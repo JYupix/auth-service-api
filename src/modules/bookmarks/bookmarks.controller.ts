@@ -74,6 +74,7 @@ export const getMyBookmarks = async (
             id: true,
             title: true,
             slug: true,
+            coverImage: true,
             publishedAt: true,
             author: {
               select: {
@@ -109,6 +110,7 @@ export const getMyBookmarks = async (
         id: b.post.id,
         title: b.post.title,
         slug: b.post.slug,
+        coverImage: b.post.coverImage,
         publishedAt: b.post.publishedAt,
         author: b.post.author,
         likesCount: b.post._count.likes,

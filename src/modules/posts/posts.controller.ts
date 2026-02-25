@@ -3,6 +3,7 @@ import { createPostSchema, updatePostSchema } from "./posts.schema.js";
 import { prisma } from "../../config/db.js";
 import { generateSlug } from "../../utils/generateSlug.js";
 import { Prisma } from "@prisma/client";
+import cloudinary from "../../config/cloudinary.js";
 
 export const getPosts = async (
   req: Request,
@@ -32,6 +33,7 @@ export const getPosts = async (
         id: true,
         title: true,
         slug: true,
+        coverImage: true,
         publishedAt: true,
         createdAt: true,
         author: {
@@ -84,6 +86,7 @@ export const getMyPosts = async (
         id: true,
         title: true,
         slug: true,
+        coverImage: true,
         published: true,
         publishedAt: true,
         createdAt: true,
@@ -123,6 +126,7 @@ export const getPostBySlug = async (
       id: true,
       title: true,
       slug: true,
+      coverImage: true,
       content: true,
       publishedAt: true,
       createdAt: true,
@@ -151,7 +155,7 @@ export const createPost = async (
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
-  const { title, content, published, categoryId, tags } =
+  const { title, content, published, coverImage, categoryId, tags } =
     createPostSchema.parse(req.body);
   const authorId = req.user?.userId;
 
@@ -199,6 +203,7 @@ export const createPost = async (
       title,
       content,
       slug,
+      coverImage: coverImage || null,
       authorId,
       published: published ?? false,
       publishedAt: published ? new Date() : null,
@@ -248,7 +253,7 @@ export const updatePost = async (
   next: NextFunction,
 ): Promise<void> => {
   const id = req.params.id as string;
-  const { title, content, published, categoryId, tags } =
+  const { title, content, published, coverImage, categoryId, tags } =
     updatePostSchema.parse(req.body);
   const authorId = req.user?.userId;
   const userRole = req.user?.role;
@@ -300,6 +305,10 @@ export const updatePost = async (
   if (published !== undefined) {
     data.published = published;
     data.publishedAt = published ? post.publishedAt || new Date() : null;
+  }
+
+  if (coverImage !== undefined) {
+    data.coverImage = coverImage;
   }
 
   if (categoryId !== undefined) {
@@ -417,7 +426,7 @@ export const deletePost = async (
 export const getFeed = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   const userId = req.user?.userId;
   const page = parseInt(req.query.page as string) || 1;
@@ -512,4 +521,87 @@ export const getFeed = async (
       hasMore: skip + limit < totalPosts,
     },
   });
+};
+
+export const uploadCoverImage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const postId = req.params.id as string;
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
+
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    if (!req.file) {
+      res.status(400).json({ message: "No file uploaded" });
+      return;
+    }
+
+    const post = await prisma.post.findFirst({
+      where: { id: postId, deletedAt: null },
+      select: {
+        authorId: true,
+        coverImageId: true,
+      },
+    });
+
+    if (!post) {
+      res.status(404).json({ message: "Post not found" });
+      return;
+    }
+
+    const isAdmin = userRole === "ADMIN";
+    const isAuthor = post.authorId === userId;
+
+    if (!isAuthor && !isAdmin) {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    if (post.coverImageId) {
+      await cloudinary.uploader.destroy(post.coverImageId);
+    }
+
+    const b64 = Buffer.from(req.file.buffer).toString("base64");
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: "blog-platform/posts",
+      resource_type: "auto",
+      transformation: [
+        { width: 1200, height: 630, crop: "limit" },
+        { quality: "auto" },
+      ],
+    });
+
+    const updatedPost = await prisma.post.update({
+      where: { id: postId },
+      data: { coverImage: result.secure_url, coverImageId: result.public_id },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        coverImage: true,
+        publishedAt: true,
+        author: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            profileImage: true,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({ post: updatedPost });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || "Upload failed" });
+  }
 };

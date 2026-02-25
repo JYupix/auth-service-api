@@ -10,6 +10,7 @@ export const createPostSchema = z.object({
     .min(10, "Content must be at least 10 characters")
     .max(50000, "Content must be less than 50,000 characters"),
   published: z.boolean().optional(),
+  coverImage: z.string().url().optional(),
   categoryId: z.string().optional(),
   tags: z.array(z.string()).max(10, "Maximum 10 tags").optional(),
 });
@@ -26,6 +27,7 @@ export const updatePostSchema = z.object({
     .max(50000, "Content must be less than 50,000 characters")
     .optional(),
   published: z.boolean().optional(),
+  coverImage: z.string().url().nullable().optional(),
   categoryId: z.string().nullable().optional(), 
   tags: z.array(z.string()).max(10, "Maximum 10 tags").optional(),
 });

@@ -4,6 +4,7 @@ import * as commentsController from '../comments/comments.controller.js';
 import * as likesController from '../likes/likes.controller.js';
 import { authenticateToken } from '../../middlewares/auth.middleware.js';
 import * as bookmarksController from '../bookmarks/bookmarks.controller.js';
+import { upload } from '../../config/multer.js';
 
 const router = Router();
 
@@ -12,9 +13,11 @@ router.get('/', controller.getPosts);
 router.get('/me', authenticateToken, controller.getMyPosts);
 router.get('/feed', authenticateToken, controller.getFeed);
 router.get('/:slug', controller.getPostBySlug);
+
 router.post('/', authenticateToken, controller.createPost);
 router.patch('/:id', authenticateToken, controller.updatePost);
 router.delete('/:id', authenticateToken, controller.deletePost);
+router.patch("/:id/upload-cover", authenticateToken, upload.single("file"), controller.uploadCoverImage);
 
 // Comments routes for posts
 router.get('/:id/comments', commentsController.getCommentsByPost);
