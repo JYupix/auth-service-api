@@ -3,6 +3,8 @@ import helmet from "helmet";
 import cookiesParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import multer from "multer";
+import morgan from "morgan";
+import logger, { morganStream } from "./config/logger.js";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import authRoutes from "./modules/auth/auth.routes.js";
@@ -37,6 +39,7 @@ app.use(helmet());
 app.use(express.json());
 app.use(cookiesParser());
 app.use(generalLimiter);
+app.use(morgan("dev", { stream: morganStream }));
 
 // Health check endpoint
 app.get("/api/health", (_, res) => {
@@ -93,7 +96,7 @@ const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   }
 
   // Generic server error
-  console.error(err);
+  logger.error(err instanceof Error ? err.message : String(err));
   return res.status(500).json({
     message: "Internal server error",
   });
