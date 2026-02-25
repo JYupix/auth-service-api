@@ -1,6 +1,8 @@
 import express, { ErrorRequestHandler, NextFunction } from "express";
 import helmet from "helmet";
 import cookiesParser from "cookie-parser";
+import rateLimit from "express-rate-limit";
+import multer from "multer";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import authRoutes from "./modules/auth/auth.routes.js";
@@ -13,10 +15,28 @@ import bookmarksRoutes from "./modules/bookmarks/bookmarks.routes.js";
 
 const app = express();
 
+// Rate limiters
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests, please try again later." },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests, please try again later." },
+});
+
 // Middlewares
 app.use(helmet());
 app.use(express.json());
 app.use(cookiesParser());
+app.use(generalLimiter);
 
 // Health check endpoint
 app.get("/api/health", (_, res) => {
@@ -24,7 +44,7 @@ app.get("/api/health", (_, res) => {
 });
 
 // Routes
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/posts", postsRoutes);
 app.use("/api/comments", commentsRoutes);
 app.use("/api/users", usersRoutes);
@@ -43,6 +63,18 @@ const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
         message: issue.message,
       })),
     });
+  }
+
+  // Multer errors (file upload)
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ message: "File too large. Maximum size is 5MB." });
+    }
+    return res.status(400).json({ message: err.message });
+  }
+
+  if (err.message?.includes("Invalid file type")) {
+    return res.status(400).json({ message: err.message });
   }
 
   // Prisma errors
