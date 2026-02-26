@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../../config/db.js";
+import { logAction } from "../../config/logger.js";
 
 export const likePost = async (
   req: Request,
@@ -37,6 +38,7 @@ export const likePost = async (
       where: { id: existingLike.id },
     });
 
+    logAction("post.unlike", { postId, userId });
     res.status(200).json({ message: "Post unliked" });
     return;
   }
@@ -48,6 +50,7 @@ export const likePost = async (
     },
   });
 
+  logAction("post.like", { postId, userId });
   res.status(201).json({ message: "Post liked" });
 };
 
@@ -92,6 +95,7 @@ export const getLikesForPost = async (
     }),
   ]);
 
+  logAction("likes.list", { postId });
   res.status(200).json({
     likes: likes.map((like) => like.user),
     pagination: {

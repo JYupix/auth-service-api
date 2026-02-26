@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { prisma } from "../../config/db.js";
 import { createTagSchema, updateTagSchema } from "./tags.schema.js";
 import { generateSlug } from "../../utils/generateSlug.js";
+import { logAction } from "../../config/logger.js";
 
 export const getTags = async (
   req: Request,
@@ -22,6 +23,7 @@ export const getTags = async (
     orderBy: { name: "asc" },
   });
 
+  logAction("tags.list");
   res.status(200).json({
     tags: tags.map((tag) => ({
       id: tag.id,
@@ -86,6 +88,7 @@ export const getPostsByTag = async (
     }),
   ]);
 
+  logAction("tags.posts_by_tag", { slug, page, limit });
   res.status(200).json({
     tag: {
       id: tag.id,
@@ -119,6 +122,7 @@ export const createTag = async (
     },
   });
 
+  logAction("tag.create", { name, slug, userId: req.user?.userId });
   res.status(201).json({ tag });
 };
 
@@ -149,6 +153,7 @@ export const updateTag = async (
     },
   });
 
+  logAction("tag.update", { slug, userId: req.user?.userId });
   res.status(200).json({ tag: updatedTag });
 };
 
@@ -172,5 +177,6 @@ export const deleteTag = async (
     where: { slug },
   });
 
+  logAction("tag.delete", { slug, userId: req.user?.userId });
   res.status(200).json({ message: "Tag deleted successfully" });
 };

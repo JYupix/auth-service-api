@@ -3,10 +3,10 @@ import helmet from "helmet";
 import cookiesParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import multer from "multer";
-import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger.js";
-import logger, { morganStream } from "./config/logger.js";
+import logger from "./config/logger.js";
+import { requestLogger } from "./middlewares/requestLogger.middleware.js";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import authRoutes from "./modules/auth/auth.routes.js";
@@ -41,7 +41,7 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json());
 app.use(cookiesParser());
 app.use(generalLimiter);
-app.use(morgan("dev", { stream: morganStream }));
+app.use(requestLogger);
 
 // Swagger docs (dev only)
 if (process.env.NODE_ENV !== "production") {

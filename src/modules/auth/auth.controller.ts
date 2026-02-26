@@ -20,6 +20,7 @@ import {
   sendPasswordResetEmail,
   sendWelcomeEmail,
 } from "../../services/email.service.js";
+import { logAction } from "../../config/logger.js";
 
 export const register = async (
   req: Request,
@@ -59,6 +60,7 @@ export const register = async (
     ...userData
   } = updatedUser;
 
+  logAction("user.register", { email, username });
   res.status(201).json({
     message:
       "User registered successfully. Please check your email to verify your account.",
@@ -106,6 +108,7 @@ export const verifyEmail = async (
 
   await sendWelcomeEmail(user.email, user.username);
 
+  logAction("user.verify_email", { userId: user.id });
   res.status(200).json({ message: "Email verified successfully" });
 };
 
@@ -169,6 +172,7 @@ export const login = async (
 
   const { password: _, ...userData } = user;
 
+  logAction("user.login", { userId: user.id, email });
   res.status(200).json({
     message: "Login successful",
     user: userData,
@@ -176,6 +180,7 @@ export const login = async (
 };
 
 export const logout = (req: Request, res: Response): void => {
+  logAction("user.logout", { userId: req.user?.userId ?? "unknown" });
   clearAuthCookie(res);
 
   res.status(200).json({
@@ -209,6 +214,7 @@ export const forgotPassword = async (
     await sendPasswordResetEmail(email, resetToken, user.username);
   }
 
+  logAction("user.forgot_password_request", { email });
   res.status(200).json({
     message:
       "If an account with that email exists, a password reset link has been sent.",
@@ -256,6 +262,7 @@ export const resetPassword = async (
 
   clearAuthCookie(res);
 
+  logAction("user.reset_password", { userId: user.id });
   res.status(200).json({
     message: "Password reset successful. Please log in with your new password.",
   });
@@ -294,5 +301,6 @@ export const getCurrentUser = async (
     return;
   }
 
+  logAction("auth.get_current_user", { userId });
   res.status(200).json({ user });
 };

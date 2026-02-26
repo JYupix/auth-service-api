@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../../config/db.js";
 import { createCommentSchema, updateCommentSchema } from "./comments.schema.js";
+import { logAction } from "../../config/logger.js";
 
 export const getCommentsByPost = async (
   req: Request,
@@ -47,6 +48,7 @@ export const getCommentsByPost = async (
     }),
   ]);
 
+  logAction("comments.list", { postId: id, page, limit });
   res.status(200).json({
     comments,
     pagination: {
@@ -104,6 +106,7 @@ export const addCommentToPost = async (
     },
   });
 
+  logAction("comment.create", { commentId: comment.id, postId: id, authorId });
   res.status(201).json({ comment });
 };
 
@@ -147,6 +150,7 @@ export const getMyComments = async (
     }),
   ]);
 
+  logAction("comments.my_comments", { authorId, page, limit });
   res.status(200).json({
     comments,
     pagination: {
@@ -210,6 +214,7 @@ export const updateComment = async (
     },
   });
 
+  logAction("comment.update", { commentId: id, authorId });
   res.status(200).json({ comment: updatedComment });
 };
 
@@ -249,5 +254,6 @@ export const deleteComment = async (
     data: { deletedAt: new Date() },
   });
 
+  logAction("comment.delete", { commentId: id, authorId });
   res.status(200).json({ message: "Comment deleted successfully" });
 };

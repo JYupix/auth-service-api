@@ -4,6 +4,7 @@ import { prisma } from "../../config/db.js";
 import { generateSlug } from "../../utils/generateSlug.js";
 import { Prisma } from "@prisma/client";
 import cloudinary from "../../config/cloudinary.js";
+import { logAction } from "../../config/logger.js";
 
 export const getPosts = async (
   req: Request,
@@ -52,6 +53,7 @@ export const getPosts = async (
     prisma.post.count({ where }),
   ]);
 
+  logAction("posts.list", { page, limit, search: search ?? null });
   res.status(200).json({
     posts,
     pagination: {
@@ -101,6 +103,7 @@ export const getMyPosts = async (
     }),
   ]);
 
+  logAction("posts.my_posts", { authorId, page, limit });
   res.status(200).json({
     posts: myPosts,
     pagination: {
@@ -147,6 +150,7 @@ export const getPostBySlug = async (
     return;
   }
 
+  logAction("posts.view", { slug });
   res.status(200).json({ post });
 };
 
@@ -244,6 +248,7 @@ export const createPost = async (
     },
   });
 
+  logAction("post.create", { postId: newPost.id, slug, authorId });
   res.status(201).json({ post: newPost });
 };
 
@@ -381,6 +386,7 @@ export const updatePost = async (
     },
   });
 
+  logAction("post.update", { postId: id, authorId });
   res.status(200).json({ post: updatedPost });
 };
 
@@ -420,6 +426,7 @@ export const deletePost = async (
     data: { deletedAt: new Date() },
   });
 
+  logAction("post.delete", { postId: id, authorId });
   res.status(200).json({ message: "Post deleted successfully" });
 };
 
@@ -446,6 +453,7 @@ export const getFeed = async (
   const followingIds = following.map((f) => f.followingId);
 
   if (followingIds.length === 0) {
+    logAction("posts.feed", { userId, followingCount: 0 });
     res.status(200).json({
       posts: [],
       pagination: {
@@ -521,6 +529,7 @@ export const getFeed = async (
       hasMore: skip + limit < totalPosts,
     },
   });
+  logAction("posts.feed", { userId, followingCount: followingIds.length, page, limit });
 };
 
 export const uploadCoverImage = async (
@@ -600,6 +609,7 @@ export const uploadCoverImage = async (
       },
     });
 
+    logAction("post.upload_cover", { postId, userId });
     res.status(200).json({ post: updatedPost });
   } catch (error: any) {
     res.status(500).json({ message: error.message || "Upload failed" });

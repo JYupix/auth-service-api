@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../../config/db.js";
+import { logAction } from "../../config/logger.js";
 
 export const toogleBookmark = async (
   req: Request,
@@ -36,6 +37,7 @@ export const toogleBookmark = async (
     await prisma.bookmark.delete({
       where: { id: existingBookmark.id },
     });
+    logAction("bookmark.remove", { postId, userId });
     res.status(200).json({ message: "Bookmark removed" });
   } else {
     await prisma.bookmark.create({
@@ -44,6 +46,7 @@ export const toogleBookmark = async (
         postId,
       },
     });
+    logAction("bookmark.add", { postId, userId });
     res.status(201).json({ message: "Bookmark added" });
   }
 };
@@ -102,6 +105,7 @@ export const getMyBookmarks = async (
     prisma.bookmark.count({ where: { userId } }),
   ]);
 
+  logAction("bookmarks.my_bookmarks", { userId, page, limit });
   res.status(200).json({
     bookmarks: bookmarks.map((b) => ({
       bookmarkId: b.id,

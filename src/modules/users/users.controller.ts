@@ -3,6 +3,7 @@ import { prisma } from "../../config/db.js";
 import { updateUserSchema } from "./users.schemas.js";
 import { Prisma } from "@prisma/client";
 import cloudinary from "../../config/cloudinary.js";
+import { logAction } from "../../config/logger.js";
 
 export const searchUsers = async (
   req: Request,
@@ -42,6 +43,7 @@ export const searchUsers = async (
     prisma.user.count({ where }),
   ]);
 
+  logAction("users.search", { search, page, limit });
   res.status(200).json({
     users,
     pagination: {
@@ -133,6 +135,7 @@ export const getUserProfile = async (
     0,
   );
 
+  logAction("users.view_profile", { username });
   res.status(200).json({
     user,
     stats: {
@@ -254,6 +257,7 @@ export const getMyProfile = async (
     0,
   );
 
+  logAction("users.my_profile", { userId });
   res.status(200).json({
     user,
     stats: {
@@ -320,6 +324,7 @@ export const updateMyProfile = async (
     },
   });
 
+  logAction("user.update_profile", { userId });
   res.status(200).json({ user: updatedUser });
 };
 
@@ -364,6 +369,7 @@ export const toggleFollowUser = async (
     await prisma.follow.delete({
       where: { id: existingFollow.id },
     });
+    logAction("user.unfollow", { userId, target: usernameToFollow });
     res.status(200).json({ message: `Unfollowed ${usernameToFollow}` });
     return;
   }
@@ -375,6 +381,7 @@ export const toggleFollowUser = async (
     },
   });
 
+  logAction("user.follow", { userId, target: usernameToFollow });
   res.status(201).json({ message: `Followed ${usernameToFollow}` });
 };
 
@@ -419,6 +426,7 @@ export const getFollowers = async (
     }),
   ]);
 
+  logAction("users.followers", { username, page, limit });
   res.json({
     followers: followers.map((f) => f.follower),
     pagination: {
@@ -472,6 +480,7 @@ export const getFollowing = async (
     }),
   ]);
 
+  logAction("users.following", { username, page, limit });
   res.status(200).json({
     following: following.map((f) => f.following),
     pagination: {
@@ -522,6 +531,7 @@ export const updateUserByAdmin = async (
     },
   });
 
+  logAction("admin.update_user", { adminId: req.user?.userId, target: username });
   res.status(200).json({ user: updatedUser });
 };
 
@@ -552,6 +562,7 @@ export const deleteUserByAdmin = async (
     data: { deletedAt: new Date() },
   });
 
+  logAction("admin.delete_user", { adminId: userId, target: username });
   res.status(200).json({ message: "User deleted successfully" });
 };
 
@@ -609,6 +620,7 @@ export const uploadProfilePhoto = async (
         bio: true,
       },
     });
+    logAction("user.upload_photo", { userId });
     res.status(200).json({ user: updatedUser });
   } catch (error) {
     res.status(500).json({ message: "Error uploading profile photo" });

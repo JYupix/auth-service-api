@@ -5,6 +5,7 @@ import {
   createCategorySchema,
   updateCategorySchema,
 } from "./categories.schema.js";
+import { logAction } from "../../config/logger.js";
 
 export const getCategories = async (
   req: Request,
@@ -25,6 +26,7 @@ export const getCategories = async (
     orderBy: { name: "asc" },
   });
 
+  logAction("categories.list");
   res.status(200).json({
     categories: categories.map((category) => ({
       id: category.id,
@@ -89,6 +91,7 @@ export const getPostsByCategory = async (
     }),
   ]);
 
+  logAction("categories.posts_by_category", { slug, page, limit });
   res.status(200).json({
     category: {
       id: category.id,
@@ -121,6 +124,7 @@ export const createCategory = async (
     },
   });
 
+  logAction("category.create", { name, slug, userId: req.user?.userId });
   res.status(201).json({ category });
 };
 
@@ -151,6 +155,7 @@ export const updateCategory = async (
     },
   });
   
+  logAction("category.update", { slug, userId: req.user?.userId });
   res.status(200).json({ category: updatedCategory });
 };
 
@@ -174,5 +179,6 @@ export const deleteCategory = async (
     where: { slug },
   });
 
+  logAction("category.delete", { slug, userId: req.user?.userId });
   res.status(200).json({ message: "Category deleted successfully" });
 };
