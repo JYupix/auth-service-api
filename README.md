@@ -24,12 +24,13 @@
 <td width="50%">
 
 ### 🔐 **Authentication & Security**
-- JWT-based authentication with token versioning
+- JWT access token (15 min) + refresh token (7 days)
 - Email verification & password reset flows
-- HTTP-only secure cookies
+- HTTP-only secure cookies with CORS support
 - Role-based access control (User / Admin)
+- Token versioning for instant session invalidation
 - Rate limiting on all routes & stricter limits on auth
-- Input validation with Zod schemas
+- Input validation with Zod schemas & env var validation at startup
 
 </td>
 <td width="50%">
@@ -127,7 +128,6 @@ NODE_ENV="development"
 DATABASE_URL="postgresql://user:password@localhost:5432/blog_platform"
 
 JWT_SECRET="your-super-secret-jwt-key"
-JWT_REFRESH_SECRET="your-refresh-token-secret"
 
 RESEND_API_KEY="re_xxxxxxxxxxxx"
 FRONTEND_URL="http://localhost:5173"
@@ -151,7 +151,8 @@ GET    /api/health                         # Server status check
 POST   /api/auth/register                  # Register new user
 GET    /api/auth/verify-email              # Verify email with token
 POST   /api/auth/login                     # Login & set auth cookie
-POST   /api/auth/logout                    # Logout & clear cookie
+POST   /api/auth/logout                    # Logout & clear both cookies
+POST   /api/auth/refresh                   # Refresh access token using refresh cookie
 POST   /api/auth/forgot-password           # Request password reset email
 POST   /api/auth/reset-password            # Reset password with token
 GET    /api/auth/me                        # Get current user 🔒
@@ -251,7 +252,7 @@ Post ──── Category    (N:1)
 ✅ **Scalable Architecture** — Modular design, clean separation of concerns  
 ✅ **Database Design** — Normalized schema, soft deletes, proper indexing  
 ✅ **API Design** — RESTful conventions, pagination, consistent responses  
-✅ **Security First** — JWT, token versioning, secure cookies, rate limiting, input validation  
+✅ **Security First** — JWT dual-token strategy, token versioning, secure cookies, CORS, rate limiting, input validation  
 ✅ **Media Handling** — Cloudinary integration with auto-deletion and image transformations  
 ✅ **Observability** — Structured Winston logging with per-request ID, timing, user and IP tracking  
 ✅ **Documentation** — Interactive Swagger UI with full OpenAPI 3.0 spec  
