@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
 
 # 📝 Blog Platform API
 
@@ -9,7 +9,9 @@
 [![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
 [![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Cloudinary](https://img.shields.io/badge/Cloudinary-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white)](https://cloudinary.com/)
 [![Resend](https://img.shields.io/badge/Resend-000000?style=for-the-badge&logo=resend&logoColor=white)](https://resend.com/)
+[![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://swagger.io/)
 
 </div>
 
@@ -22,58 +24,71 @@
 <td width="50%">
 
 ### 🔐 **Authentication & Security**
-- JWT-based authentication with refresh tokens
+- JWT-based authentication with token versioning
 - Email verification & password reset flows
-- Token versioning for session management
 - HTTP-only secure cookies
-- Role-based access control (User/Admin)
+- Role-based access control (User / Admin)
+- Rate limiting on all routes & stricter limits on auth
+- Input validation with Zod schemas
 
 </td>
 <td width="50%">
 
 ### 📱 **Social Platform**
-- Full CRUD operations for blog posts
+- Full CRUD for blog posts with soft deletes
 - Nested comments system
-- Like/Unlike functionality
-- Follow/Unfollow users
-- User profiles with activity stats
+- Like / Unlike posts
+- Bookmark / Unbookmark posts
+- Follow / Unfollow users
+- Personalized feed from followed users
+- Tags & Categories for content organization
 
 </td>
 </tr>
 <tr>
 <td width="50%">
 
-### ⚡ **Performance & Best Practices**
-- Pagination on all list endpoints
-- Soft deletes for data integrity
-- Optimized database queries with Prisma
-- Input validation with Zod schemas
-- Type-safe development with TypeScript
+### 🖼️ **Media & Storage**
+- Profile photo upload via Cloudinary
+- Post cover image upload via Cloudinary
+- Old image auto-deletion on update
+- File validation (JPEG / PNG / WebP, 5 MB max)
+- On-the-fly image transformations
 
 </td>
 <td width="50%">
 
 ### 🛠️ **Developer Experience**
-- Clean architecture & modular design
-- Comprehensive error handling
-- RESTful API conventions
-- Auto-generated Prisma Client
-- Easy local setup with migrations
+- Interactive Swagger UI at `/api/docs`
+- Structured logging with Winston (business actions + HTTP)
+- Unique `requestId` per request with timing & IP
+- Modular architecture & clean separation of concerns
+- Pagination on all list endpoints
+- Optimized Prisma queries
 
 </td>
 </tr>
 </table>
 
+---
+
 ## 🚀 Tech Stack
 
-- **Runtime:** Node.js
-- **Language:** TypeScript
-- **Framework:** Express.js
-- **Database:** PostgreSQL (Neon)
-- **ORM:** Prisma
-- **Authentication:** JWT + HTTP-only Cookies
-- **Email Service:** Resend
-- **Validation:** Zod
+| Layer | Technology |
+|---|---|
+| Runtime | Node.js |
+| Language | TypeScript |
+| Framework | Express.js 5 |
+| Database | PostgreSQL (Neon) |
+| ORM | Prisma |
+| Authentication | JWT + HTTP-only Cookies |
+| Image Storage | Cloudinary + Multer |
+| Email Service | Resend |
+| Validation | Zod |
+| Logging | Winston |
+| Documentation | Swagger / OpenAPI 3.0 |
+
+---
 
 ## 📦 Quick Start
 
@@ -89,97 +104,159 @@ npm install
 cp .env.example .env
 # Edit .env with your credentials
 
-# Run database migrations (uses migrate.ps1 script)
+# Run database migrations
 .\migrate.ps1 -Name "init"
 
 # Start development server
 npm run dev
 ```
 
-**Server runs on:** `http://localhost:3000`
+**Server runs on:** `http://localhost:3000`  
+**API Docs (dev):** `http://localhost:3000/api/docs`
 
 > **Note:** The `migrate.ps1` script automatically runs migrations and generates the Prisma Client in one command.
+
+---
 
 ## 🔑 Environment Variables
 
 ```env
+PORT=3000
+NODE_ENV="development"
+
 DATABASE_URL="postgresql://user:password@localhost:5432/blog_platform"
+
 JWT_SECRET="your-super-secret-jwt-key"
 JWT_REFRESH_SECRET="your-refresh-token-secret"
+
 RESEND_API_KEY="re_xxxxxxxxxxxx"
 FRONTEND_URL="http://localhost:5173"
-NODE_ENV="development"
+
+CLOUDINARY_CLOUD_NAME="your-cloud-name"
+CLOUDINARY_API_KEY="your-api-key"
+CLOUDINARY_API_SECRET="your-api-secret"
 ```
+
+---
 
 ## 📚 API Endpoints
 
+### 🏥 Health
+```http
+GET    /api/health                         # Server status check
+```
+
 ### 🔐 Authentication
 ```http
-POST   /api/auth/register           # Register new user
-GET    /api/auth/verify-email       # Verify email with token
-POST   /api/auth/login               # Login & get tokens
-POST   /api/auth/logout              # Logout & clear session
-POST   /api/auth/forgot-password     # Request password reset
-POST   /api/auth/reset-password      # Reset password with token
-GET    /api/auth/me                  # Get current user (Protected)
+POST   /api/auth/register                  # Register new user
+GET    /api/auth/verify-email              # Verify email with token
+POST   /api/auth/login                     # Login & set auth cookie
+POST   /api/auth/logout                    # Logout & clear cookie
+POST   /api/auth/forgot-password           # Request password reset email
+POST   /api/auth/reset-password            # Reset password with token
+GET    /api/auth/me                        # Get current user 🔒
 ```
 
 ### 👤 Users
 ```http
-GET    /api/users/:username          # Get user profile & posts
-GET    /api/users/me                 # Get my profile (Protected)
-PATCH  /api/users/me                 # Update profile (Protected)
-POST   /api/users/:username/follow   # Follow/Unfollow user (Protected)
-GET    /api/users/:username/followers # Get user followers
-GET    /api/users/:username/following # Get user following
+GET    /api/users?search=                  # Search users by name or username
+GET    /api/users/me                       # Get my profile & stats 🔒
+PATCH  /api/users/me                       # Update my profile 🔒
+PATCH  /api/users/me/upload-photo          # Upload profile photo 🔒 📷
+GET    /api/users/:username                # Get user public profile & posts
+POST   /api/users/:username/follow         # Follow / Unfollow user 🔒
+GET    /api/users/:username/followers      # Get user followers
+GET    /api/users/:username/following      # Get user following
+PATCH  /api/users/:username                # Update user 🔒 👑
+DELETE /api/users/:username                # Soft delete user 🔒 👑
 ```
 
 ### 📝 Posts
 ```http
-GET    /api/posts                    # Get all posts (paginated)
-POST   /api/posts                    # Create post (Protected)
-GET    /api/posts/me                 # Get my posts (Protected)
-GET    /api/posts/:slug              # Get post by slug
-PATCH  /api/posts/:id                # Update post (Protected)
-DELETE /api/posts/:id                # Delete post (Protected)
+GET    /api/posts                          # Get published posts (paginated, searchable)
+POST   /api/posts                          # Create post 🔒
+GET    /api/posts/me                       # Get my posts (drafts + published) 🔒
+GET    /api/posts/feed                     # Get feed from followed users 🔒
+GET    /api/posts/:slug                    # Get post by slug
+PATCH  /api/posts/:id                      # Update post 🔒
+DELETE /api/posts/:id                      # Soft delete post 🔒
+PATCH  /api/posts/:id/upload-cover         # Upload cover image 🔒 📷
 ```
 
 ### 💬 Comments
 ```http
-GET    /api/posts/:id/comments       # Get post comments (paginated)
-POST   /api/posts/:id/comments       # Add comment (Protected)
-GET    /api/comments/me              # Get my comments (Protected)
-PATCH  /api/comments/:id             # Update comment (Protected)
-DELETE /api/comments/:id             # Delete comment (Protected)
+GET    /api/posts/:id/comments             # Get post comments (paginated)
+POST   /api/posts/:id/comments             # Add comment 🔒
+GET    /api/comments/me                    # Get my comments 🔒
+PATCH  /api/comments/:id                   # Update comment 🔒
+DELETE /api/comments/:id                   # Delete comment 🔒
 ```
 
 ### ❤️ Likes
 ```http
-POST   /api/posts/:id/like           # Like/Unlike post (Protected)
-GET    /api/posts/:id/likes          # Get post likes (paginated)
+POST   /api/posts/:id/like                 # Like / Unlike post 🔒
+GET    /api/posts/:id/likes                # Get post likes (paginated)
 ```
 
-> **Note:** All list endpoints support `?page=1&limit=10` query parameters
+### 🔖 Bookmarks
+```http
+POST   /api/posts/:id/bookmark             # Bookmark / Unbookmark post 🔒
+GET    /api/bookmarks/me                   # Get my bookmarks 🔒
+```
+
+### 🏷️ Tags
+```http
+GET    /api/tags                           # Get all tags with post count
+POST   /api/tags                           # Create tag 🔒 👑
+PATCH  /api/tags/:slug                     # Update tag 🔒 👑
+DELETE /api/tags/:slug                     # Delete tag 🔒 👑
+GET    /api/tags/:slug/posts               # Get posts by tag (paginated)
+```
+
+### 📂 Categories
+```http
+GET    /api/categories                     # Get all categories with post count
+POST   /api/categories                     # Create category 🔒 👑
+PATCH  /api/categories/:slug               # Update category 🔒 👑
+DELETE /api/categories/:slug               # Delete category 🔒 👑
+GET    /api/categories/:slug/posts         # Get posts by category (paginated)
+```
+
+> 🔒 Requires authentication &nbsp;|&nbsp; 👑 Requires Admin role &nbsp;|&nbsp; 📷 Multipart/form-data  
+> All list endpoints support `?page=1&limit=10` query parameters.
+
+---
 
 ## 🗂️ Database Schema
 
-```prisma
-User → Posts (1:N)
-User → Comments (1:N)
-User → Likes (1:N)
-User → Followers/Following (N:N)
-Post → Comments (1:N)
-Post → Likes (1:N)
 ```
+User ──── Posts       (1:N)
+User ──── Comments    (1:N)
+User ──── Likes       (1:N)
+User ──── Bookmarks   (1:N)
+User ──── Followers   (N:N self-referential)
+Post ──── Comments    (1:N)
+Post ──── Likes       (1:N)
+Post ──── Bookmarks   (1:N)
+Post ──── Tags        (N:N via PostTag)
+Post ──── Category    (N:1)
+```
+
+---
 
 ## 🎯 Key Highlights for Recruiters
 
-✅ **Production-Ready Code** - Enterprise patterns, error handling, security best practices  
-✅ **Type Safety** - Full TypeScript implementation with strict mode  
-✅ **Scalable Architecture** - Modular design, separation of concerns  
-✅ **Database Design** - Normalized schema, soft deletes, proper indexing  
-✅ **API Design** - RESTful conventions, pagination, consistent responses  
-✅ **Security First** - JWT, token rotation, secure cookies, input validation  
+✅ **Production-Ready Code** — Enterprise patterns, error handling, security best practices  
+✅ **Type Safety** — Full TypeScript implementation with strict mode  
+✅ **Scalable Architecture** — Modular design, clean separation of concerns  
+✅ **Database Design** — Normalized schema, soft deletes, proper indexing  
+✅ **API Design** — RESTful conventions, pagination, consistent responses  
+✅ **Security First** — JWT, token versioning, secure cookies, rate limiting, input validation  
+✅ **Media Handling** — Cloudinary integration with auto-deletion and image transformations  
+✅ **Observability** — Structured Winston logging with per-request ID, timing, user and IP tracking  
+✅ **Documentation** — Interactive Swagger UI with full OpenAPI 3.0 spec  
+
+---
 
 ## 📄 License
 
@@ -194,3 +271,4 @@ MIT © [JYupix](https://github.com/JYupix)
 Made with ❤️ by [JYupix](https://github.com/JYupix)
 
 </div>
+
