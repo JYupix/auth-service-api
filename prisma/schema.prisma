@@ -7,9 +7,8 @@ datasource db {
 }
 
 enum Role {
-  USER       // Usuario normal: crea, edita y elimina sus posts, comenta y da likes
-  MODERATOR  // Modera posts y comentarios, puede ocultar o aprobar contenido
-  ADMIN      // Control total: usuarios, contenido y configuración del sistema
+  USER
+  ADMIN
 }
 
 model User {
@@ -157,7 +156,7 @@ model PostTag {
   tagId  String
   tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
-  createadAt DateTime @default(now())
+  createdAt DateTime @default(now())
   
   @@id([postId, tagId])
   @@index([postId])

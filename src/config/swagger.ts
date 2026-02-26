@@ -857,7 +857,7 @@ const options: swaggerJsdoc.Options = {
                   type: "object",
                   properties: {
                     name: { type: "string" },
-                    role: { type: "string", enum: ["USER", "MODERATOR", "ADMIN"] },
+                    role: { type: "string", enum: ["USER", "ADMIN"] },
                     emailVerified: { type: "boolean" },
                   },
                 },

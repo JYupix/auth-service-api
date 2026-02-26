@@ -6,6 +6,16 @@ import logger from "./config/logger.js";
 
 const PORT = ENV.PORT;
 
+// Catch anything that escapes Express (e.g. rejected promises outside routes, sync crashes)
+process.on("unhandledRejection", (reason) => {
+  logger.error(`Unhandled rejection: ${reason}`);
+});
+
+process.on("uncaughtException", (error) => {
+  logger.error(`Uncaught exception: ${error.message}`);
+  process.exit(1); // crash fast — let the process manager restart it
+});
+
 app.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`);
 

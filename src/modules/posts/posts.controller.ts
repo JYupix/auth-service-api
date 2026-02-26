@@ -29,7 +29,7 @@ export const getPosts = async (
 
   const [posts, totalPosts] = await Promise.all([
     prisma.post.findMany({
-      where: { published: true, deletedAt: null },
+      where,
       select: {
         id: true,
         title: true,

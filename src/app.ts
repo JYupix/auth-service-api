@@ -1,5 +1,6 @@
 import express, { ErrorRequestHandler, NextFunction } from "express";
 import helmet from "helmet";
+import cors from "cors";
 import cookiesParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import multer from "multer";
@@ -9,6 +10,8 @@ import logger from "./config/logger.js";
 import { requestLogger } from "./middlewares/requestLogger.middleware.js";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
+import { prisma } from "./config/db.js";
+import { ENV } from "./config/env.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import postsRoutes from "./modules/posts/posts.routes.js";
 import commentsRoutes from "./modules/comments/comments.routes.js";
@@ -38,6 +41,10 @@ const authLimiter = rateLimit({
 
 // Middlewares
 app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors({
+  origin: ENV.FRONTEND_URL,
+  credentials: true, // allow cookies
+}));
 app.use(express.json());
 app.use(cookiesParser());
 app.use(generalLimiter);
@@ -49,8 +56,13 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // Health check endpoint
-app.get("/api/health", (_, res) => {
-  res.json({ status: "ok" });
+app.get("/api/health", async (_, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok", db: "connected", timestamp: new Date().toISOString() });
+  } catch {
+    res.status(503).json({ status: "degraded", db: "unreachable", timestamp: new Date().toISOString() });
+  }
 });
 
 // Routes

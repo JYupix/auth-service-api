@@ -25,6 +25,11 @@ export const authenticateToken = async (
 
   const decoded = verifyToken(token);
 
+  if (decoded.type !== "auth") {
+    res.status(401).json({ message: "Invalid token type." });
+    return;
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: decoded.userId },
     select: { tokenVersion: true },
