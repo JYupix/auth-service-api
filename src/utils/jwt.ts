@@ -17,6 +17,17 @@ export const generateAuthToken = (
   return jwt.sign(
     { userId, email, role, tokenVersion, type: "auth" },
     ENV.JWT_SECRET,
+    { expiresIn: "15m" },
+  );
+};
+
+export const generateRefreshToken = (
+  userId: string,
+  tokenVersion: number,
+): string => {
+  return jwt.sign(
+    { userId, tokenVersion, type: "refresh" },
+    ENV.JWT_SECRET,
     { expiresIn: "7d" },
   );
 };
